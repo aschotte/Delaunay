@@ -35,10 +35,10 @@ class Edge:
   def GetVertexList(self):
     return [self.v0, self.v1]
 
-  def Display(self, ax=None, color='black'):
+  def Display(self, ax=None, color='black', marker='o'):
     if ax is None:
       fig, ax = plt.subplots()
-    ax.plot([self.v0.x,self.v1.x], [self.v0.y,self.v1.y], marker='o', color=color)
+    ax.plot([self.v0.x,self.v1.x], [self.v0.y,self.v1.y], marker=marker, color=color)
 
 class Circle:
   def __init__(self, c, r):
@@ -118,6 +118,7 @@ class RandomVertexSet:
   def Display(self, ax=None):
     if ax is None:
       fig, ax = plt.subplots()
+      ax.set_aspect('equal')
     ax.scatter(self.rvsNumpy[:,0], self.rvsNumpy[:,1])
 
   def FindMinimum(self, axis):
@@ -155,6 +156,7 @@ class TriangularMesh():
     self.tList=[st]
     self.toRemove=[]
     self.badTList=[]
+    self.boundaryEdges=[]
     self.st=st
     self.rvs=rvs
 
@@ -169,6 +171,7 @@ class TriangularMesh():
 
     #Get edges bounding the hole
     boundingEdges=self.GetUniqueEdgesFromTriangleList(self.badTList)
+    self.boundaryEdges=boundingEdges
 
     #Create new triangles with bounding edges and the new vertex
     for e in boundingEdges:
@@ -195,7 +198,7 @@ class TriangularMesh():
       allEdges.remove(e)
 
     return allEdges
-  
+
   def removeSuperTriangleStencil(self):
     for t in self.tList:
       vList=t.GetVertexList()
@@ -206,29 +209,35 @@ class TriangularMesh():
             if t not in self.toRemove:
               self.toRemove.append(t)
     for t in self.toRemove:
-      self.tList.remove(t) 
-  
+      self.tList.remove(t)
+
   def emptyRemove(self):
     self.toRemove=[]
-  
+
   def emptyBadTri(self):
     self.badTList=[]
+
+  def emptyBoudaryEdges(self):
+    self.boundaryEdges=[]
 
   def Display(self, ax=None, withCircle=False):
     if ax is None:
         fig, ax = plt.subplots()
+        ax.set_aspect('equal')
     for t in self.tList:
       t.Display(ax=ax, withCircle=withCircle)
     for t in self.toRemove:
       t.Display(ax=ax, withCircle=withCircle, color='red')
     for t in self.badTList:
       t.Display(ax=ax, withCircle=withCircle, color='red')
+    for e in self.boundaryEdges:
+      e.Display(ax=ax, color="blue", marker=None)
     self.rvs.Display(ax=ax)
 
 if __name__ == '__main__':
-
   #random vertex set [0,5]²
-  rvs=RandomVertexSet(5,5,50,seed=100)
+  rvs=RandomVertexSet(20,10,200,seed=100)
+  rvs.Display()
 
   #create super triangle from vertex set
   st=SuperTriangle(rvs)
@@ -238,15 +247,18 @@ if __name__ == '__main__':
   tm.Display()
   for i in range(len(rvs.rvs)):
     fig, ax = plt.subplots()
+    ax.set_aspect('equal')
     tm.tListUpdate(rvs.rvs[i])
     tm.Display(ax=ax, withCircle=False)
     rvs.rvs[i].Display(ax=ax,label="current vertex",color="green", s=7)
     plt.legend()
     plt.show()
-    
     tm.emptyBadTri()
+    tm.emptyBoudaryEdges()
+
   tm.removeSuperTriangleStencil()
   tm.Display()
 
   tm.emptyRemove()
   tm.Display()
+  tm.Display(withCircle=True)
